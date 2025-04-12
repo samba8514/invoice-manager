@@ -1,13 +1,24 @@
 # Python files and folders
-__pycache__/
 *.pyc
+__pycache__/
 *.pyo
+*.pyd
 
 # Environment files and folders
-.env
-.env.*
 venv/
 instance/
+.venv/
+ENV/
+env/
+bin/
+lib/
+include/
+Scripts/
+site-packages/
+
+# dotenv
+.env
+.env.*
 
 # Editor & OS artifacts
 *.log
@@ -17,8 +28,15 @@ instance/
 # PDFs (optional: if you want to keep invoice files out of Git)
 *.pdf
 
+# System files
+*.DS_Store
+
 # VS Code
 .vscode/
 
 # Windows
 Scripts/
+
+# Project-specific
+instance/
+*.log
