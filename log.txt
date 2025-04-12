@@ -1,0 +1,17 @@
+[2025-04-12 07:10:06.811135] [samba@Samba-PC] Added to DB: Samlingsfaktura.pdf
+[2025-04-12 07:10:06.939842] [samba@Samba-PC] Added to DB: Faktura_1594.pdf
+[2025-04-12 07:10:07.287752] [samba@Samba-PC] Added to DB: 12047973 Faktura 7003851.pdf
+[2025-04-12 07:10:07.300728] [samba@Samba-PC] Added to DB: 12047973 Faktura 7003852.pdf
+[2025-04-12 07:10:07.311435] [samba@Samba-PC] Added to DB: 12047973 Faktura 7003853.pdf
+[2025-04-12 07:10:07.321159] [samba@Samba-PC] Added to DB: 12047973 Faktura 7003855 (1) (1).pdf
+[2025-04-12 07:10:07.331010] [samba@Samba-PC] Added to DB: 12047973 Faktura 7003856.pdf
+[2025-04-12 07:10:07.342750] [samba@Samba-PC] Added to DB: 12047973 Faktura 7003857.pdf
+[2025-04-12 07:10:07.954445] [samba@Samba-PC] Added to DB: Sätra.pdf
+[2025-04-12 07:10:07.987000] [samba@Samba-PC] Added to DB: 260704_310163165.pdf
+[2025-04-12 07:10:07.992925] [samba@Samba-PC] Added to DB: Invoice_310163165.pdf
+[2025-04-12 07:10:08.044817] [samba@Samba-PC] Added to DB: 10177670.pdf
+[2025-04-12 07:10:08.085084] [samba@Samba-PC] Added to DB: 10181169.pdf
+[2025-04-12 07:10:08.216332] [samba@Samba-PC] Added to DB: 526810552624_2170.pdf
+[2025-04-12 07:10:08.272442] [samba@Samba-PC] Added to DB: 10181343.pdf
+[2025-04-12 07:10:08.328883] [samba@Samba-PC] Added to DB: Avi 10020489258547 (2025-04-08, Dentaland).pdf
+[2025-04-12 07:10:08.372089] [samba@Samba-PC] Added to DB: FKT3233.PDF
