@@ -12,6 +12,7 @@ ENV/
 env/
 bin/
 lib/
+Lib/
 include/
 Scripts/
 site-packages/
@@ -27,6 +28,7 @@ site-packages/
 
 # PDFs (optional: if you want to keep invoice files out of Git)
 *.pdf
+*.PDF
 
 # System files
 *.DS_Store
@@ -39,4 +41,6 @@ Scripts/
 
 # Project-specific
 instance/
+invoices/
 *.log
+log.txt
