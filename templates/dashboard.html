@@ -128,8 +128,7 @@
                 <td>{{ invoice.id }}</td>
                 <td><a href="{{ url_for('download', filename=invoice.filename) }}" target="_blank">{{ invoice.filename }}</a></td>
                 <td>{{ invoice.status }}</td>
-                <td>{{ invoice.uploaded_at.strftime('%Y-%m-%d') }}</td>
-                <td>{{ invoice.updated_at.strftime('%Y-%m-%d') if invoice.updated_at else invoice.uploaded_at.strftime('%Y-%m-%d') }}</td>
+                <td>{{ invoice.received_at.strftime('%Y-%m-%d') if invoice.received_at else invoice.uploaded_at.strftime('%Y-%m-%d') }}</td>
                 <td>
                   <form action="/update/{{ invoice.id }}" method="post" class="d-flex flex-column gap-1">
                     <div class="d-flex gap-2 flex-wrap">

@@ -1,6 +1,7 @@
 # fetch_emails.py
 
 from flask import current_app
+from email.utils import parsedate_to_datetime
 import os
 from models import db, Invoice, FetchLog
 from dotenv import load_dotenv
@@ -34,7 +35,6 @@ def log_action(message):
     with open("log.txt", "a", encoding="utf-8") as f:
         f.write(f"[{datetime.utcnow()}] [{system_user}@{hostname}] {message}\n")
 
-        
 def fetch_pdfs():
     os.makedirs(SAVE_FOLDER, exist_ok=True)
     mail = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
@@ -52,6 +52,7 @@ def fetch_pdfs():
             continue
 
         msg = email.message_from_bytes(msg_data[0][1])
+        msg_date = parsedate_to_datetime(msg["Date"])
         subject_data = decode_header(msg["Subject"])[0]
         subject, encoding = subject_data[0], subject_data[1]
         if isinstance(subject, bytes):
@@ -72,13 +73,13 @@ def fetch_pdfs():
                     existing = Invoice.query.filter_by(filename=filename).first()
                     duplicate = Invoice.query.filter_by(comment=file_hash).first()
                     if existing or duplicate:
-                        print(f"🔁 Duplicate found, skipping: {filename}")
+                        print(f"Duplicate found, skipping: {filename}")
                         continue
 
                 filepath = os.path.join(SAVE_FOLDER, filename)
                 with open(filepath, 'wb') as f:
                     f.write(raw_data)
-                print(f"📥 Downloaded: {filename}")
+                print(f"Downloaded: {filename}")
 
                 # Add to DB with file hash in comment field (for simplicity)
                 with current_app.app_context():
@@ -86,15 +87,16 @@ def fetch_pdfs():
                         filename=filename,
                         status="Unpaid",
                         comment=file_hash,
-                        uploaded_at=datetime.utcnow()
+                        uploaded_at=datetime.utcnow(),
+                        received_at=msg_date
                     )
                     db.session.add(new_invoice)
                     db.session.commit()
-                    print(f"✅ Added to DB: {filename}")
+                    print(f" Added to DB: {filename}")
                     log_action(f"Added to DB: {filename}")
 
     mail.logout()
-    # ✅ After all emails processed, log fetch time
+    # After all emails processed, log fetch time
     with current_app.app_context():
         db.session.add(FetchLog())
         db.session.commit()
