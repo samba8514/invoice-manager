@@ -3,11 +3,12 @@ from flask_sqlalchemy import SQLAlchemy
 from models import db, User, Invoice, FetchLog,ActionLog
 from api import api_bp
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from log_utils import log_action
+
 
 # ==== Setup ====
 load_dotenv()
@@ -42,13 +43,50 @@ def login():
 def logout():
     session.pop('user_id', None)
     return redirect(url_for('login'))
+ 
 
 @app.route('/')
 @login_required
 def dashboard():
-    invoices = Invoice.query.order_by(Invoice.uploaded_at.desc()).all()
+    search = request.args.get('search', '').strip()
+    status = request.args.get('status', '').strip()
+    sort = request.args.get('sort', 'desc')
+
+    query = Invoice.query
+    if status:
+        query = query.filter_by(status=status)
+    if search:
+        query = query.filter(
+            Invoice.filename.ilike(f"%{search}%") |
+            Invoice.subject.ilike(f"%{search}%") |
+            Invoice.sender.ilike(f"%{search}%")
+        )
+
+    invoices = query.order_by(
+        Invoice.uploaded_at.asc() if sort == 'asc' else Invoice.uploaded_at.desc()
+    ).all()
+
+    # 🟡 Add overdue flag (if unpaid and older than 15 days)
+    now = datetime.utcnow()
+    for inv in invoices:
+        inv.is_overdue = inv.status == "Unpaid" and inv.received_at and (now - inv.received_at > timedelta(days=15))
+
     last_log = FetchLog.query.order_by(FetchLog.timestamp.desc()).first()
-    return render_template('dashboard.html', invoices=invoices, last_fetched=last_log.timestamp if last_log else None)
+    stats = {
+        'total': Invoice.query.count(),
+        'paid': Invoice.query.filter_by(status='Paid').count(),
+        'unpaid': Invoice.query.filter_by(status='Unpaid').count(),
+        'postponed': Invoice.query.filter_by(status='Postponed').count(),
+        'cancelled': Invoice.query.filter_by(status='Cancelled').count(),
+    }
+
+    return render_template('dashboard.html',
+        invoices=invoices,
+        last_fetched=last_log.timestamp if last_log else None,
+        stats=stats,
+        search=search,
+        status=status
+    )
 
 @app.route('/fetch-emails')
 def fetch_emails_route():

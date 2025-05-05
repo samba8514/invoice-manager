@@ -74,7 +74,19 @@
 
     <!-- Main Content -->
     <div class="col-md-10 content">
-
+      <div class="row mb-4">
+        {% for label, value in stats.items() %}
+          <div class="col-md-2">
+            <div class="card text-center shadow-sm">
+              <div class="card-body">
+                <h6 class="card-title text-muted text-uppercase">{{ label }}</h6>
+                <h4 class="card-text">{{ value }}</h4>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      
       <!-- Header Controls -->
       <div class="header-controls">
         <div>
@@ -109,6 +121,34 @@
         {% endif %}
       {% endwith %}
 
+      <form method="GET" class="d-flex gap-2 align-items-end mb-3">
+        <div>
+          <label>Status:</label>
+          <select name="status" class="form-select">
+            <option value="">All</option>
+            {% for s in ['Paid', 'Unpaid', 'Postponed', 'Cancelled'] %}
+              <option value="{{ s }}" {% if s == status %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Search:</label>
+          <input type="text" name="search" class="form-control" placeholder="filename or subject..." value="{{ search }}">
+        </div>
+        <button type="submit" class="btn btn-primary">Apply</button>
+      </form>
+      <div class="d-flex gap-3 align-items-center mb-3">
+        <span>Sort by date:</span>
+        <a href="{{ url_for('dashboard', search=search, status=status, sort='desc') }}"
+          class="btn btn-sm {% if request.args.get('sort') != 'asc' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+          Newest First
+        </a>
+        <a href="{{ url_for('dashboard', search=search, status=status, sort='asc') }}"
+          class="btn btn-sm {% if request.args.get('sort') == 'asc' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+          Oldest First
+        </a>
+      </div>
+
       <!-- Invoice Table -->
       <div class="invoice-table">
         <table class="table align-middle" id="invoiceTable">
@@ -117,14 +157,14 @@
               <th data-sort-method="number">#</th>
               <th>File</th>
               <th>Status</th>
-              <th>Created</th>
+              <th>Received</th>
               <th>Updated</th>
               <th>Action</th>
             </tr>
           </thead>
           <tbody>
             {% for invoice in invoices %}
-              <tr>
+              <tr class="{% if invoice.is_overdue %}table-warning{% endif %}">
                 <td>{{ invoice.id }}</td>
                 <td>
                   <a href="{{ url_for('download', filename=invoice.filepath) }}" target="_blank">
@@ -155,7 +195,7 @@
                 </td>
               </tr>
             {% endfor %}
-          </tbody>
+          </tbody> 
         </table>
       </div>
     </div>

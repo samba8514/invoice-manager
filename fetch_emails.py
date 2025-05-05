@@ -90,6 +90,7 @@ def fetch_pdfs():
                         status="Unpaid",
                         comment=file_hash,
                         uploaded_at=datetime.utcnow(),
+                        received_at=parsed_date,
                         subject=subject,
                         sender=sender
                     )

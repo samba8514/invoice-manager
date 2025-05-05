@@ -18,6 +18,7 @@ class Invoice(db.Model):
     subject = db.Column(db.String(300))
     sender = db.Column(db.String(300))
     filepath = db.Column(db.String(300))
+    received_at = db.Column(db.DateTime)
 
 class FetchLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
