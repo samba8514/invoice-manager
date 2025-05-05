@@ -126,16 +126,24 @@
             {% for invoice in invoices %}
               <tr>
                 <td>{{ invoice.id }}</td>
-                <td><a href="{{ url_for('download', filename=invoice.filename) }}" target="_blank">{{ invoice.filename }}</a></td>
+                <td>
+                  <a href="{{ url_for('download', filename=invoice.filepath) }}" target="_blank">
+                    {{ invoice.filename }}
+                  </a>
+                </td>
                 <td>{{ invoice.status }}</td>
-                <td>{{ invoice.received_at.strftime('%Y-%m-%d') if invoice.received_at else invoice.uploaded_at.strftime('%Y-%m-%d') }}</td>
+                <td>{{ invoice.received_at.strftime('%Y-%m-%d') if invoice.received_at else 'N/A' }}</td>
                 <td>
                   <form action="/update/{{ invoice.id }}" method="post" class="d-flex flex-column gap-1">
                     <div class="d-flex gap-2 flex-wrap">
                       {% for option in ["Paid", "Unpaid", "Postponed", "Cancelled"] %}
                         <div class="form-check form-check-inline">
-                          <input class="form-check-input" type="radio" name="status" id="status{{ invoice.id }}{{ option }}" value="{{ option }}" {% if invoice.status == option %}checked{% endif %}>
-                          <label class="form-check-label" for="status{{ invoice.id }}{{ option }}">{{ option }}</label>
+                          <input class="form-check-input" type="radio" name="status"
+                                 id="status{{ invoice.id }}{{ option }}"
+                                 value="{{ option }}" {% if invoice.status == option %}checked{% endif %}>
+                          <label class="form-check-label" for="status{{ invoice.id }}{{ option }}">
+                            {{ option }}
+                          </label>
                         </div>
                       {% endfor %}
                     </div>

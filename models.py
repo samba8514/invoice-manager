@@ -1,13 +1,9 @@
-# models.py
-
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-from sqlalchemy import DateTime
 
 db = SQLAlchemy()
 
 class User(db.Model):
-    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(150), nullable=False)
@@ -19,19 +15,17 @@ class Invoice(db.Model):
     status = db.Column(db.String(50), default="Unpaid")
     comment = db.Column(db.Text, default="")
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime)
+    subject = db.Column(db.String(300))
+    sender = db.Column(db.String(300))
+    filepath = db.Column(db.String(300))
 
 class FetchLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-
-
-class Invoice(db.Model):
+    
+class ActionLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    filename = db.Column(db.String(200), nullable=False)
-    status = db.Column(db.String(50), default="Unpaid")
-    comment = db.Column(db.Text, default="")
-    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime)
-    received_at = db.Column(db.DateTime)  # ✅ New column
-
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    action = db.Column(db.String(255))
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    invoice_id = db.Column(db.Integer, db.ForeignKey('invoice.id'), nullable=True)

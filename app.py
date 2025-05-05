@@ -1,12 +1,14 @@
 from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory, flash
-from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
-from functools import wraps
+from models import db, User, Invoice, FetchLog,ActionLog
+from api import api_bp
 import os
 from datetime import datetime
 from dotenv import load_dotenv
-from models import db, User, Invoice, FetchLog  # ✅ models imported here
-from fetch_emails import fetch_pdfs
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
+from log_utils import log_action
+
 # ==== Setup ====
 load_dotenv()
 
@@ -14,11 +16,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fallback-secret')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///users.db')
 app.config['UPLOAD_FOLDER'] = 'invoices'
-
 db.init_app(app)
-
-# ==== Models ====
-
 
 # ==== Login Required Decorator ====
 def login_required(f):
@@ -52,6 +50,12 @@ def dashboard():
     last_log = FetchLog.query.order_by(FetchLog.timestamp.desc()).first()
     return render_template('dashboard.html', invoices=invoices, last_fetched=last_log.timestamp if last_log else None)
 
+@app.route('/fetch-emails')
+def fetch_emails_route():
+    from fetch_emails import fetch_pdfs
+    fetch_pdfs()
+    flash("Emails fetched successfully!", "success")
+    return redirect(url_for('dashboard'))
 
 @app.route('/upload', methods=['POST'])
 @login_required
@@ -73,26 +77,26 @@ def update(invoice_id):
         invoice.status = request.form.get('status')
         invoice.comment = request.form.get('comment')
         db.session.commit()
+        log_action(f"Status updated to {invoice.status}", invoice.id)
+
     return redirect(url_for('dashboard'))
 
-@app.route('/invoices/<filename>')
+@app.route('/invoices/<path:filename>')
 @login_required
 def download(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-@app.route('/fetch-emails')
+@app.route('/logs')
 @login_required
-def fetch_emails_route():
-    try:
-        fetch_pdfs()
-        flash("Fetched emails and added new invoices.", "success")
-    except Exception as e:
-        flash(f"Failed to fetch emails: {e}", "danger")
-    return redirect(url_for('dashboard'))
+def view_logs():
+    logs = ActionLog.query.order_by(ActionLog.timestamp.desc()).limit(100).all()
+    return render_template('logs.html', logs=logs)
+
 
 # ==== Run ====
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    app.register_blueprint(api_bp)
     with app.app_context():
         db.create_all()
     app.run(debug=True)

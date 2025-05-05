@@ -1,48 +1,39 @@
-# fetch_emails.py
 
-from flask import current_app
-from email.utils import parsedate_to_datetime
-import os
-from models import db, Invoice, FetchLog
-from dotenv import load_dotenv
 import imaplib
 import email
 from email.header import decode_header
+from dateutil.relativedelta import relativedelta  # Put at the top of the file
+import os
+import email.utils 
 import hashlib
 from datetime import datetime
-import platform
-import getpass
+from dotenv import load_dotenv
 
 # ==== CONFIG ====
-
 load_dotenv()
 
 EMAIL = os.getenv("EMAIL_USER")
 PASSWORD = os.getenv("EMAIL_PASS")
 IMAP_SERVER = 'imap.one.com'
 IMAP_PORT = 993
-SAVE_FOLDER = os.path.join("invoices")
+BASE_FOLDER = "invoices"
 
 # ==== Compute SHA256 hash ====
 def compute_hash(data):
     return hashlib.sha256(data).hexdigest()
 
 # ==== Connect to IMAP and fetch PDFs ====
-def log_action(message):
-    from datetime import datetime
-    hostname = platform.node()
-    system_user = getpass.getuser()
-    with open("log.txt", "a", encoding="utf-8") as f:
-        f.write(f"[{datetime.utcnow()}] [{system_user}@{hostname}] {message}\n")
-
 def fetch_pdfs():
-    os.makedirs(SAVE_FOLDER, exist_ok=True)
+    from app import app, db, Invoice, FetchLog
+    from login import log_action
+
     mail = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
     mail.login(EMAIL, PASSWORD)
     mail.select("inbox")
 
-    # Search for emails since a given date
-    since_date = '01-Mar-2025'
+    # Search for emails since the start of the current month
+    #since_date = (datetime.now().replace(day=1)).strftime('%d-%b-%Y')
+    since_date = (datetime.now() - relativedelta(months=3)).strftime('%d-%b-%Y')
     status, messages = mail.search(None, 'SINCE', since_date)
     email_ids = messages[0].split()
 
@@ -52,11 +43,11 @@ def fetch_pdfs():
             continue
 
         msg = email.message_from_bytes(msg_data[0][1])
-        msg_date = parsedate_to_datetime(msg["Date"])
         subject_data = decode_header(msg["Subject"])[0]
         subject, encoding = subject_data[0], subject_data[1]
         if isinstance(subject, bytes):
             subject = subject.decode(encoding or 'utf-8', errors='ignore')
+        sender = msg.get("From", "Unknown Sender")
 
         for part in msg.walk():
             if part.get_content_maintype() == 'multipart':
@@ -69,38 +60,50 @@ def fetch_pdfs():
                 raw_data = part.get_payload(decode=True)
                 file_hash = compute_hash(raw_data)
 
-                with current_app.app_context():
+                with app.app_context():
                     existing = Invoice.query.filter_by(filename=filename).first()
                     duplicate = Invoice.query.filter_by(comment=file_hash).first()
                     if existing or duplicate:
-                        print(f"Duplicate found, skipping: {filename}")
+                        print(f"🔁 Duplicate found, skipping: {filename}")
                         continue
 
-                filepath = os.path.join(SAVE_FOLDER, filename)
+                # Organize files by year/month
+                #now = datetime.now()
+                #save_folder = os.path.join(BASE_FOLDER, str(now.year), f"{now.month:02}")
+                email_date = msg.get("Date")
+                parsed_date = email.utils.parsedate_to_datetime(email_date)
+
+                year = str(parsed_date.year)
+                month = f"{parsed_date.month:02}"
+                relative_path = os.path.join(year, month)
+                save_folder = os.path.join(BASE_FOLDER, relative_path)
+                os.makedirs(save_folder, exist_ok=True)
+                filepath = os.path.join(save_folder, filename)
+
                 with open(filepath, 'wb') as f:
                     f.write(raw_data)
-                print(f"Downloaded: {filename}")
+                print(f"📥 Downloaded: {filename} to {save_folder}")
 
-                # Add to DB with file hash in comment field (for simplicity)
-                with current_app.app_context():
+                with app.app_context():
                     new_invoice = Invoice(
                         filename=filename,
                         status="Unpaid",
                         comment=file_hash,
                         uploaded_at=datetime.utcnow(),
-                        received_at=msg_date
+                        subject=subject,
+                        sender=sender
                     )
+                    new_invoice.filepath = os.path.join(relative_path, filename) 
                     db.session.add(new_invoice)
                     db.session.commit()
-                    print(f" Added to DB: {filename}")
+                    print(f"✅ Added to DB: {filename}")
                     log_action(f"Added to DB: {filename}")
 
     mail.logout()
-    # After all emails processed, log fetch time
-    with current_app.app_context():
+    with app.app_context():
         db.session.add(FetchLog())
         db.session.commit()
         print("📌 Fetch timestamp saved to DB.")
-        
+
 if __name__ == "__main__":
     fetch_pdfs()
