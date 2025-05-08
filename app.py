@@ -111,11 +111,34 @@ def upload():
 @login_required
 def update(invoice_id):
     invoice = Invoice.query.get(invoice_id)
-    if invoice:
-        invoice.status = request.form.get('status')
-        invoice.comment = request.form.get('comment')
-        db.session.commit()
-        log_action(f"Status updated to {invoice.status}", invoice.id)
+    print("Invoice UID:", invoice.imap_uid)
+    if not invoice:
+        flash("Invoice not found", "danger")
+        return redirect(url_for('dashboard'))
+
+    new_status = request.form.get('status')
+    invoice.status = new_status
+    invoice.comment = request.form.get('comment')
+    db.session.commit()
+    log_action(f"Status updated to {invoice.status}", invoice.id)
+
+    if new_status == "Paid" and invoice.imap_uid:
+        try:
+            import imaplib, os
+            imap = imaplib.IMAP4_SSL(os.getenv("IMAP_SERVER"), int(os.getenv("IMAP_PORT")))
+
+            imap.login(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
+            imap.select("Inbox")
+            result = imap.uid('COPY', invoice.imap_uid, "paid_bills")
+            if result[0] == 'OK':
+                imap.uid('STORE', invoice.imap_uid, '+FLAGS', '(\Deleted)')
+                imap.expunge()
+                log_action(f"Moved email UID {invoice.imap_uid} to paid_bills", invoice.id)
+            else:
+                log_action(f"Failed to copy email UID {invoice.imap_uid}", invoice.id)
+            imap.logout()
+        except Exception as e:
+            log_action(f"IMAP error: {str(e)}", invoice.id)
 
     return redirect(url_for('dashboard'))
 

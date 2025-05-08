@@ -14,8 +14,6 @@ load_dotenv()
 
 EMAIL = os.getenv("EMAIL_USER")
 PASSWORD = os.getenv("EMAIL_PASS")
-IMAP_SERVER = 'imap.one.com'
-IMAP_PORT = 993
 BASE_FOLDER = "invoices"
 
 # ==== Compute SHA256 hash ====
@@ -27,9 +25,11 @@ def fetch_pdfs():
     from app import app, db, Invoice, FetchLog
     from login import log_action
 
-    mail = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
+    mail = imaplib.IMAP4_SSL(os.getenv("IMAP_SERVER"), int(os.getenv("IMAP_PORT")))
     mail.login(EMAIL, PASSWORD)
     mail.select("inbox")
+    typ, mailboxes = mail.list()
+    print(mailboxes)
 
     # Search for emails since the start of the current month
     #since_date = (datetime.now().replace(day=1)).strftime('%d-%b-%Y')
@@ -38,9 +38,16 @@ def fetch_pdfs():
     email_ids = messages[0].split()
 
     for email_id in email_ids:
-        res, msg_data = mail.fetch(email_id, "(RFC822)")
-        if res != 'OK':
+        uid = email_id.decode()  # ✅ UID from search result
+        print("✅ UID from search:", uid)
+
+        # Now fetch the message body using UID
+        res, msg_data = mail.uid('fetch', uid, '(RFC822)')
+        if res != 'OK' or not msg_data or not isinstance(msg_data[0], tuple):
+            print(f"❌ Failed to fetch message for UID {uid}")
             continue
+
+
 
         msg = email.message_from_bytes(msg_data[0][1])
         subject_data = decode_header(msg["Subject"])[0]
@@ -91,6 +98,7 @@ def fetch_pdfs():
                         comment=file_hash,
                         uploaded_at=datetime.utcnow(),
                         received_at=parsed_date,
+                        imap_uid=uid,
                         subject=subject,
                         sender=sender
                     )

@@ -19,6 +19,7 @@ class Invoice(db.Model):
     sender = db.Column(db.String(300))
     filepath = db.Column(db.String(300))
     received_at = db.Column(db.DateTime)
+    imap_uid = db.Column(db.String, nullable=True)
 
 class FetchLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
