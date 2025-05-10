@@ -24,6 +24,7 @@ def compute_hash(data):
 def fetch_pdfs():
     from app import app, db, Invoice, FetchLog
     from login import log_action
+    from pathlib import Path
 
     mail = imaplib.IMAP4_SSL(os.getenv("IMAP_SERVER"), int(os.getenv("IMAP_PORT")))
     mail.login(EMAIL, PASSWORD)
@@ -34,7 +35,7 @@ def fetch_pdfs():
     # Search for emails since the start of the current month
     #since_date = (datetime.now().replace(day=1)).strftime('%d-%b-%Y')
     since_date = (datetime.now() - relativedelta(months=3)).strftime('%d-%b-%Y')
-    status, messages = mail.search(None, 'SINCE', since_date)
+    status, messages = mail.uid('search', None, 'SINCE', since_date)
     email_ids = messages[0].split()
 
     for email_id in email_ids:
@@ -62,7 +63,7 @@ def fetch_pdfs():
             if part.get('Content-Disposition') is None:
                 continue
 
-            filename = part.get_filename()
+            filename = Path(part.get_filename()).name
             if filename and filename.lower().endswith(".pdf"):
                 raw_data = part.get_payload(decode=True)
                 file_hash = compute_hash(raw_data)

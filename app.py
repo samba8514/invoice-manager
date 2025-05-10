@@ -12,6 +12,7 @@ from log_utils import log_action
 
 # ==== Setup ====
 load_dotenv()
+print("📧 Logged in as:", os.getenv("EMAIL_USER"))
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fallback-secret')
@@ -119,6 +120,20 @@ def update(invoice_id):
     new_status = request.form.get('status')
     invoice.status = new_status
     invoice.comment = request.form.get('comment')
+
+    invoice.amount = request.form.get('amount') or None
+    invoice.comments = request.form.get('comments') or None
+
+    deadline_str = request.form.get('deadline')
+    if deadline_str:
+        try:
+            invoice.deadline = datetime.strptime(deadline_str, "%Y-%m-%d").date()
+        except ValueError:
+            invoice.deadline = None
+    else:
+        invoice.deadline = None
+
+
     db.session.commit()
     log_action(f"Status updated to {invoice.status}", invoice.id)
 
@@ -128,7 +143,7 @@ def update(invoice_id):
             imap = imaplib.IMAP4_SSL(os.getenv("IMAP_SERVER"), int(os.getenv("IMAP_PORT")))
 
             imap.login(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
-            imap.select("Inbox")
+            imap.select("inbox")
             result = imap.uid('COPY', invoice.imap_uid, "paid_bills")
             if result[0] == 'OK':
                 imap.uid('STORE', invoice.imap_uid, '+FLAGS', '(\Deleted)')
