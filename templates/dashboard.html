@@ -34,20 +34,12 @@
         {% endfor %}
       </div>
 
-      <div class="d-flex justify-content-between mb-3">
-        <div>
-          <h3>Invoices</h3>
-          {% if last_fetched %}
-          <small class="text-muted">Last fetched: {{ last_fetched.strftime('%Y-%m-%d %H:%M:%S') }}</small>
-          {% endif %}
-        </div>
-        <div class="d-flex flex-column gap-2 align-items-end">
-          <form action="/upload" method="post" enctype="multipart/form-data" class="d-flex gap-2">
-            <input type="file" name="file" accept="application/pdf" class="form-control">
-            <button type="submit" class="btn btn-primary">Upload</button>
-          </form>
-          <a href="/fetch-emails" class="btn btn-outline-primary btn-sm">🔄 Fetch Invoices from Email</a>
-        </div>
+      <!-- Filter buttons -->
+      <div class="mb-3">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm">All</a>
+        <a href="{{ url_for('dashboard', missing='critical') }}" class="btn btn-warning btn-sm">
+          🔍 Missing Amount/Deadline
+        </a>
       </div>
 
       {% with messages = get_flashed_messages(with_categories=true) %}
@@ -63,24 +55,28 @@
       {% endif %}
       {% endwith %}
 
-      <table class="table table-bordered table-striped align-middle">
+      <table class="table table-bordered table-striped align-middle" id="invoiceTable">
         <thead>
           <tr>
             <th>#</th>
             <th>File</th>
             <th>Sender</th>
             <th>Status</th>
+            <th>Amount</th>
+            <th>Due Date</th>
             <th>Received</th>
             <th>Action</th>
           </tr>
         </thead>
         <tbody>
           {% for invoice in invoices %}
-          <tr class="{% if invoice.is_overdue %}table-warning{% endif %}">
+          <tr class="{% if not invoice.amount or not invoice.deadline %}table-warning{% elif invoice.is_overdue %}table-danger{% endif %}">
             <td>{{ invoice.id }}</td>
             <td><a href="{{ url_for('download', filename=invoice.filepath) }}" target="_blank">{{ invoice.filename }}</a></td>
             <td>{{ invoice.sender }}</td>
             <td>{{ invoice.status }}</td>
+            <td>{{ invoice.amount if invoice.amount else '-' }}</td>
+            <td>{{ invoice.deadline.strftime('%Y-%m-%d') if invoice.deadline else '-' }}</td>
             <td>{{ invoice.received_at.strftime('%Y-%m-%d') if invoice.received_at else 'N/A' }}</td>
             <td>
               <form action="/update/{{ invoice.id }}" method="post" class="d-flex flex-column gap-1">
@@ -90,11 +86,11 @@
                     <option value="{{ option }}" {% if invoice.status == option %}selected{% endif %}>{{ option }}</option>
                     {% endfor %}
                   </select>
-                  <input name="amount" type="number" step="0.01" value="{{ invoice.amount or '' }}" placeholder="Amount"
-                         class="form-control form-control-sm" style="max-width: 100px;">
+                  <input name="amount" type="number" step="0.01" value="{{ invoice.amount or '' }}"
+                         placeholder="Amount" class="form-control form-control-sm" style="max-width: 100px;">
                   <input name="deadline" type="date"
                          value="{{ invoice.deadline.strftime('%Y-%m-%d') if invoice.deadline else '' }}"
-                         class="form-control form-control-sm" style="max-width: 140px;">
+                         class="form-control form-control-sm" style="max-width: 150px;">
                   <input name="comments" placeholder="Comments"
                          value="{{ invoice.comments or '' }}" class="form-control form-control-sm" style="flex: 1;">
                   <button class="btn btn-sm btn-outline-secondary">Update</button>
@@ -111,7 +107,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/tablesort.min.js"></script>
 <script>
-  new Tablesort(document.querySelector('table'));
+  new Tablesort(document.getElementById('invoiceTable'));
 </script>
 </body>
 </html>
