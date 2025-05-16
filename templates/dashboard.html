@@ -116,18 +116,33 @@
             <td>
               <form action="/update/{{ invoice.id }}" method="post" class="d-flex flex-column gap-1">
                 <div class="d-flex flex-wrap gap-2">
+                  <!-- Status Dropdown -->
                   <select name="status" class="form-select form-select-sm" style="max-width: 120px;">
                     {% for option in ["Paid", "Unpaid", "Postponed", "Cancelled"] %}
                     <option value="{{ option }}" {% if invoice.status == option %}selected{% endif %}>{{ option }}</option>
                     {% endfor %}
                   </select>
+
+                  <!-- Amount -->
                   <input name="amount" type="number" step="0.01" value="{{ invoice.amount or '' }}"
-                         placeholder="Amount" class="form-control form-control-sm" style="max-width: 100px;">
+                        placeholder="Amount" class="form-control form-control-sm" style="max-width: 100px;">
+
+                  <!-- Deadline -->
                   <input name="deadline" type="date"
-                         value="{{ invoice.deadline.strftime('%Y-%m-%d') if invoice.deadline else '' }}"
-                         class="form-control form-control-sm" style="max-width: 150px;">
+                        value="{{ invoice.deadline.strftime('%Y-%m-%d') if invoice.deadline else '' }}"
+                        class="form-control form-control-sm" style="max-width: 150px;">
+
+                  <!-- Send Filename -->
+                  <input name="send_filename" placeholder="Name from bank statement"
+                        value="{{ invoice.send_filename or '' }}"
+                        class="form-control form-control-sm" style="max-width: 140px;">
+
+                  <!-- Comment -->
                   <input name="comments" placeholder="Comments"
-                         value="{{ invoice.comments or '' }}" class="form-control form-control-sm" style="flex: 1;">
+                        value="{{ invoice.comments or '' }}"
+                        class="form-control form-control-sm" style="flex: 1;">
+
+                  <!-- Submit -->
                   <button class="btn btn-sm btn-outline-secondary">Update</button>
                 </div>
               </form>

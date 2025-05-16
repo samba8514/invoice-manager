@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, s
 from flask_sqlalchemy import SQLAlchemy
 from models import db, User, Invoice, FetchLog,ActionLog
 from api import api_bp
-import os
+import os, shutil
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -135,13 +135,29 @@ def update(invoice_id):
     else:
         invoice.deadline = None
 
+    # Save send_filename
+    invoice.send_filename = request.form.get('send_filename') or None
+
+    # ✅ Copy to need_to_send/ if filename is given
+    if invoice.send_filename:
+        src = os.path.join(app.config['UPLOAD_FOLDER'], invoice.filepath)
+        target_dir = os.path.join(app.config['UPLOAD_FOLDER'], "need_to_send")
+        os.makedirs(target_dir, exist_ok=True)
+
+        filename = invoice.send_filename
+        dst = os.path.join(target_dir, invoice.send_filename)
+        try:
+            shutil.copy(src, dst)
+            log_action(f"Copied to need_to_send: {dst}", invoice.id)
+        except Exception as e:
+            log_action(f"Copy to need_to_send failed: {e}", invoice.id)
 
     db.session.commit()
     log_action(f"Status updated to {invoice.status}", invoice.id)
 
     if new_status == "Paid" and invoice.imap_uid:
         try:
-            import imaplib, os
+            import imaplib
             imap = imaplib.IMAP4_SSL(os.getenv("IMAP_SERVER"), int(os.getenv("IMAP_PORT")))
 
             imap.login(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
