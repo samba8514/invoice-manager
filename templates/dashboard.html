@@ -85,7 +85,7 @@
       <table class="table table-bordered table-striped align-middle" id="invoiceTable">
         <thead>
           <tr>
-            <th>#</th>
+            <th data-sort-method="number">#</th>
             <th>File</th>
             <th>Sender</th>
             <th>Status</th>
@@ -106,7 +106,7 @@
                      {% elif invoice.status == 'Unpaid' %}
                        unpaid-info
                      {% endif %}">
-            <td>{{ invoice.id }}</td>
+            <td data-sort="{{ invoice.id }}">{{ invoice.id }}</td>
             <td><a href="{{ url_for('download', filename=invoice.filepath) }}" target="_blank">{{ invoice.filename }}</a></td>
             <td>{{ invoice.sender }}</td>
             <td>{{ invoice.status }}</td>
@@ -156,6 +156,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/tablesort.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/sorts/tablesort.number.min.js"></script>
 <script>
   new Tablesort(document.getElementById('invoiceTable'));
 </script>

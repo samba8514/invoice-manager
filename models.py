@@ -14,6 +14,7 @@ class Invoice(db.Model):
     filename = db.Column(db.String(200), nullable=False)
     status = db.Column(db.String(50), default="Unpaid")
     comment = db.Column(db.Text, default="")
+    comments = db.Column(db.Text)
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
     subject = db.Column(db.String(300))
     sender = db.Column(db.String(300))
