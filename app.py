@@ -86,7 +86,9 @@ def dashboard():
         last_fetched=last_log.timestamp if last_log else None,
         stats=stats,
         search=search,
-        status=status
+        status=status,
+        sort=sort,
+        now=datetime.utcnow
     )
 
 @app.route('/fetch-emails')
