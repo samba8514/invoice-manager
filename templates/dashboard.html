@@ -54,6 +54,11 @@
           </a>
         </div>
       </form>
+      {% if last_fetched %}
+      <div class="text-end text-muted mb-3">
+        🕒 Last refreshed: {{ last_fetched.strftime('%Y-%m-%d %H:%M:%S') }}
+      </div>
+      {% endif %}
 
       <!-- Sort Controls -->
       <div class="d-flex gap-3 align-items-center mb-3">
